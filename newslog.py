@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from __future__ import division
 import psycopg2
 import webbrowser
@@ -43,7 +44,7 @@ main_page_head = '''
             white-space: pre-wrap;
             color: #4d4d4d;
         }
-        
+
         h1 {
             color: #b74e40;
             font-family: Arial;
@@ -114,34 +115,20 @@ def open_log():
     webbrowser.open('file://' + url, new=2)
 
 
-def main():
-    """Tests conntection to database, if connection exists calls calls
-       open_log() which creates html file and starts
-       database query functions to retrieve data
-    """
-    try:
-        db = psycopg2.connect(database="news")
-        print("Connected to news database")
-        db.close()
-        open_log()
-    except:
-        print("Connection to news database failed")
-
-
 def popular_articles():
     """Queries database for 3 most popular articles
        of all time returns a single string with 3 titles and their views
     """
     db = psycopg2.connect(database="news")
     cursor = db.cursor()
-    cursor.execute("select articles.title, \
-                    count(log.path) as num \
-                    from log \
-                    right join articles on log.path \
-                    like concat('%',articles.slug) \
-                    and log.status = '200 OK' \
-                    group by articles.title \
-                    order by num desc limit 3")
+    cursor.execute("""select articles.title,
+                    count(log.path) as num
+                    from log
+                    right join articles on log.path
+                    = concat('/article/',articles.slug)
+                    and log.status = '200 OK'
+                    group by articles.title
+                    order by num desc limit 3""")
     logged_paths = cursor.fetchall()
     db.close()
     res = ''
@@ -158,9 +145,9 @@ def popular_authors():
     """
     db = psycopg2.connect(database="news")
     cursor = db.cursor()
-    cursor.execute("select name, num \
-                    from authors, author_id_views \
-                    where authors.id = author_id_views.author")
+    cursor.execute("""select name, num
+                    from authors, author_id_views
+                    where authors.id = author_id_views.author""")
     authors = cursor.fetchall()
     db.close()
     res = ''
@@ -176,10 +163,10 @@ def errors():
     """
     db = psycopg2.connect(database="news")
     cursor = db.cursor()
-    cursor.execute("select errors_by_date.time, \
-                    errors_by_date.errors::float / status_by_date.status * 100 \
-                    from errors_by_date, status_by_date \
-                    where errors_by_date.time = status_by_date.time")
+    cursor.execute("""select errors_by_date.time,
+                    errors_by_date.errors::float / status_by_date.status * 100
+                    from errors_by_date, status_by_date
+                    where errors_by_date.time = status_by_date.time""")
     err = cursor.fetchall()
     db.close()
     res = ''
@@ -190,4 +177,4 @@ def errors():
     return res
 
 
-main()
+open_log()
